@@ -1,33 +1,43 @@
 package com.djdt2421.security;
 
+import com.djdt2421.userDetailsConfig.UserDetailsServiceImpl;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
+    @Autowired
+   UserDetailsServiceImpl us;
+
+    public SecurityConfig(UserDetailsServiceImpl us) {
+        this.us = us;
+    }
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSec) throws Exception {
-        httpSec.authorizeHttpRequests(authorizerequest ->
-                        authorizerequest
-                                .requestMatchers("/showAllCourses").hasRole("ADMIN")
-                                .requestMatchers("/showStudentById/{idStudent}").hasRole("USER")
-                                .requestMatchers("addNewCourse/{studentId}").permitAll()
-                                .requestMatchers("addNewStudent/").permitAll()
-                )
-                .formLogin(Customizer.withDefaults())
-                .csrf(csrf -> csrf.disable()); // Optional: only if required
+       httpSec.csrf(csrf -> csrf.disable())
+               .authorizeHttpRequests(auth ->auth
+                       .requestMatchers("/showAllStudents").hasRole("ADMIN")
+                       .requestMatchers("/showAllCourses").permitAll()
+               );
         return httpSec.build();
+    }
+
+    @Bean
+    DaoAuthenticationProvider daoAuthenticationProvider() {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        provider.setUserDetailsService(us);
+        provider.setPasswordEncoder(passwordEncoder());
+        return provider;
     }
 
     @Bean
@@ -35,16 +45,17 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    @Bean
-    public InMemoryUserDetailsManager inMemoryUserDetailsManager(PasswordEncoder passwordEncoder) {
-        UserDetails userDetails = User.withUsername("Valera")
-                .password(passwordEncoder.encode("Valera1"))
-                .roles("USER")
-                .build();
-        UserDetails userDetails1 = User.withUsername("Admin")
-                .password(passwordEncoder.encode("AdminPsw"))
-                .roles("ADMIN")
-                .build();
-        return new InMemoryUserDetailsManager(userDetails, userDetails1);
-    }
+//    @Bean
+//    public InMemoryUserDetailsManager inMemoryUserDetailsManager(PasswordEncoder passwordEncoder) {
+//        UserDetails userDetails = User.withUsername("Valera")
+//                .password(passwordEncoder.encode("Valera1"))
+//                .roles("USER")
+//                .build();
+//        UserDetails userDetails1 = User.withUsername("Admin")
+//                .password(passwordEncoder.encode("AdminPsw"))
+//                .roles("ADMIN")
+//                .build();
+//        return new InMemoryUserDetailsManager(userDetails, userDetails1);
+//    }
+
 }
